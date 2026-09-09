@@ -1,60 +1,30 @@
-# Pyrefly VS Code Extension
+Extensions allow extending the debugger without modifying the debugger code. This is implemented with explicit namespace
+packages.
 
-The Pyrefly extension uses Pyrefly to provide language server features for
-Python in VS Code. Please see [pyrefly.org](https://pyrefly.org/) for more
-information.
+To implement your own extension:
 
-## Features
+1. Ensure that the root folder of your extension is in sys.path (add it to PYTHONPATH) 
+2. Ensure that your module follows the directory structure below
+3. The ``__init__.py`` files inside the pydevd_plugin and extension folder must contain the preamble below,
+and nothing else.
+Preamble: 
+```python
+try:
+    __import__('pkg_resources').declare_namespace(__name__)
+except ImportError:
+    import pkgutil
+    __path__ = pkgutil.extend_path(__path__, __name__)
+```
+4. Your plugin name inside the extensions folder must start with `"pydevd_plugin"`
+5. Implement one or more of the abstract base classes defined in `_pydevd_bundle.pydevd_extension_api`. This can be done
+by either inheriting from them or registering with the abstract base class.
 
-The Pyrefly extension:
-
-- Adds inline type errors matching the Pyrefly command-line to your editor.
-  By default, a project without a Pyrefly configuration uses the
-  [`basic`](https://pyrefly.org/en/docs/configuration/#preset-basic) preset
-  or auto-migrated settings from a nearby `mypy.ini` / `pyrightconfig.json`.
-  Set `python.pyrefly.typeCheckingMode` to choose a different preset.
-- Adds language features from Pyrefly's analysis like go-to definition, hover,
-  etc. (full list [here](https://github.com/facebook/pyrefly/issues/344)) and
-  disables Pylance completely (VSCode's built-in Python extension)
-- Adds a `Pyrefly: Infer Types for Current File` command that writes inferred
-  type annotations to the active Python file.
-
-## Customization
-
-By default, Pyrefly should work in the IDE with no configuration necessary. But
-to ensure your project is set up properly, see
-[configurations](https://pyrefly.org/en/docs/configuration/).
-
-The following configuration options are IDE-specific and exposed as VSCode
-settings:
-
-- `python.pyrefly.typeCheckingMode` [enum: auto, off, basic, legacy,
-  default, strict, all; default: auto]: [Preset](https://pyrefly.org/en/docs/configuration/#preset)
-  to use for files not covered by a `pyrefly.toml`. The default `auto`
-  migrates a nearby mypy/pyright config when present, otherwise uses
-  `basic`.
-- `python.pyrefly.disableTypeErrors` [boolean: false]: If true, Pyrefly
-  will not provide diagnostics for files in this workspace.
-- `python.pyrefly.displayTypeErrors` (deprecated): replaced by
-  `python.pyrefly.typeCheckingMode` and `python.pyrefly.disableTypeErrors`.
-  Still accepted for backwards compatibility.
-- `python.pyrefly.disableLanguageServices` [boolean: false]: by default, Pyrefly
-  will provide both type errors and other language features like go-to
-  definition, intellisense, hover, etc. Enable this option to keep type errors
-  from Pyrefly unchanged but use VSCode's Python extension for everything else.
-- `python.pyrefly.disabledLanguageServices` [json: {}]: a config to disable
-  certain lsp methods from pyrefly. For example, if you want go-to definition
-  but not find-references.
-- `pyrefly.lspPath` [string: '']: if your platform is not supported, you can
-  build pyrefly from source and specify the binary here.
-- `python.pyrefly.configPath` [string: '']: path to a `pyrefly.toml` or
-  `pyproject.toml` configuration file. When set, the LSP will use this config
-  for all files in your workspace instead of the default Pyrefly config-finding logic
-  wherever possible.
-- `python.analysis.showHoverGoToLinks` [boolean: true]: Controls whether hover
-  tooltips include "Go to definition" and "Go to type definition" navigation
-  links. Set to `false` for cleaner tooltips with only type information.
-- `python.analysis.autoImportCompletions` [boolean: true]: Controls whether
-  completions include symbols that are not yet imported. When enabled, accepting
-  such a completion also inserts the required import statement. Set to `false` to
-  only complete symbols that are already in scope.
+* Directory structure:
+```
+|--  root_directory-> must be on python path
+|    |-- pydevd_plugins
+|    |   |-- __init__.py -> must contain preamble
+|    |   |-- extensions
+|    |   |   |-- __init__.py -> must contain preamble
+|    |   |   |-- pydevd_plugin_plugin_name.py
+```
