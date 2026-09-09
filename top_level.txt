@@ -1,1 +1,1 @@
-debugpy
+importlib_metadata
