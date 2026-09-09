@@ -1,47 +1,58 @@
-from functools import wraps
+r"""
+Parso is a Python parser that supports error recovery and round-trip parsing
+for different Python versions (in multiple Python versions). Parso is also able
+to list multiple syntax errors in your python file.
+
+Parso has been battle-tested by jedi_. It was pulled out of jedi to be useful
+for other projects as well.
+
+Parso consists of a small API to parse Python and analyse the syntax tree.
+
+.. _jedi: https://github.com/davidhalter/jedi
+
+A simple example:
+
+>>> import parso
+>>> module = parso.parse('hello + 1', version="3.9")
+>>> expr = module.children[0]
+>>> expr
+PythonNode(arith_expr, [<Name: hello@1,0>, <Operator: +>, <Number: 1>])
+>>> print(expr.get_code())
+hello + 1
+>>> name = expr.children[0]
+>>> name
+<Name: hello@1,0>
+>>> name.end_pos
+(1, 5)
+>>> expr.end_pos
+(1, 9)
+
+To list multiple issues:
+
+>>> grammar = parso.load_grammar()
+>>> module = grammar.parse('foo +\nbar\ncontinue')
+>>> error1, error2 = grammar.iter_errors(module)
+>>> error1.message
+'SyntaxError: invalid syntax'
+>>> error2.message
+"SyntaxError: 'continue' not properly in loop"
+"""
+
+from parso.parser import ParserSyntaxError
+from parso.grammar import Grammar, load_grammar
+from parso.utils import split_lines, python_bytes_to_unicode
 
 
-class _PluginManager:
-    def __init__(self):
-        self._registered_plugins = []
-        self._cached_base_callbacks = {}
-        self._built_functions = {}
-
-    def register(self, *plugins):
-        """
-        Makes it possible to register your plugin.
-        """
-        self._registered_plugins.extend(plugins)
-        self._build_functions()
-
-    def decorate(self, name=None):
-        def decorator(callback):
-            @wraps(callback)
-            def wrapper(*args, **kwargs):
-                return built_functions[public_name](*args, **kwargs)
-
-            public_name = name or callback.__name__
-
-            assert public_name not in self._built_functions
-            built_functions = self._built_functions
-            built_functions[public_name] = callback
-            self._cached_base_callbacks[public_name] = callback
-
-            return wrapper
-
-        return decorator
-
-    def _build_functions(self):
-        for name, callback in self._cached_base_callbacks.items():
-            for plugin in reversed(self._registered_plugins):
-                # Need to reverse so the first plugin is run first.
-                try:
-                    func = getattr(plugin, name)
-                except AttributeError:
-                    pass
-                else:
-                    callback = func(callback)
-            self._built_functions[name] = callback
+__version__ = '0.8.5'
 
 
-plugin_manager = _PluginManager()
+def parse(code=None, **kwargs):
+    """
+    A utility function to avoid loading grammars.
+    Params are documented in :py:meth:`parso.Grammar.parse`.
+
+    :param str version: The version used by :py:func:`parso.load_grammar`.
+    """
+    version = kwargs.pop('version', None)
+    grammar = load_grammar(version=version)
+    return grammar.parse(code, **kwargs)
