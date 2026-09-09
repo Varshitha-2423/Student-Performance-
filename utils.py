@@ -1,163 +1,90 @@
-# This file is dual licensed under the terms of the Apache License, Version
-# 2.0, and the BSD License. See the LICENSE file in the root of this repository
-# for complete details.
-
-from __future__ import annotations
-
+""" A universal module with functions / classes without dependencies. """
 import functools
 import re
-from typing import NewType, Tuple, Union, cast
-
-from .tags import Tag, parse_tag
-from .version import InvalidVersion, Version, _TrimmedRelease
-
-BuildTag = Union[Tuple[()], Tuple[int, str]]
-NormalizedName = NewType("NormalizedName", str)
+import os
 
 
-class InvalidName(ValueError):
+_sep = os.path.sep
+if os.path.altsep is not None:
+    _sep += os.path.altsep
+_path_re = re.compile(r'(?:\.[^{0}]+|[{0}]__init__\.py)$'.format(re.escape(_sep)))
+del _sep
+
+
+def to_list(func):
+    def wrapper(*args, **kwargs):
+        return list(func(*args, **kwargs))
+    return wrapper
+
+
+def to_tuple(func):
+    def wrapper(*args, **kwargs):
+        return tuple(func(*args, **kwargs))
+    return wrapper
+
+
+def unite(iterable):
+    """Turns a two dimensional array into a one dimensional."""
+    return set(typ for types in iterable for typ in types)
+
+
+class UncaughtAttributeError(Exception):
     """
-    An invalid distribution name; users should refer to the packaging user guide.
+    Important, because `__getattr__` and `hasattr` catch AttributeErrors
+    implicitly. This is really evil (mainly because of `__getattr__`).
+    Therefore this class originally had to be derived from `BaseException`
+    instead of `Exception`.  But because I removed relevant `hasattr` from
+    the code base, we can now switch back to `Exception`.
+
+    :param base: return values of sys.exc_info().
     """
 
 
-class InvalidWheelFilename(ValueError):
+def safe_property(func):
+    return property(reraise_uncaught(func))
+
+
+def reraise_uncaught(func):
     """
-    An invalid wheel filename was found, users should refer to PEP 427.
+    Re-throw uncaught `AttributeError`.
+
+    Usage:  Put ``@rethrow_uncaught`` in front of the function
+    which does **not** suppose to raise `AttributeError`.
+
+    AttributeError is easily get caught by `hasattr` and another
+    ``except AttributeError`` clause.  This becomes problem when you use
+    a lot of "dynamic" attributes (e.g., using ``@property``) because you
+    can't distinguish if the property does not exist for real or some code
+    inside of the "dynamic" attribute through that error.  In a well
+    written code, such error should not exist but getting there is very
+    difficult.  This decorator is to help us getting there by changing
+    `AttributeError` to `UncaughtAttributeError` to avoid unexpected catch.
+    This helps us noticing bugs earlier and facilitates debugging.
     """
+    @functools.wraps(func)
+    def wrapper(*args, **kwds):
+        try:
+            return func(*args, **kwds)
+        except AttributeError as e:
+            raise UncaughtAttributeError(e) from e
+    return wrapper
 
 
-class InvalidSdistFilename(ValueError):
-    """
-    An invalid sdist filename was found, users should refer to the packaging user guide.
-    """
+class PushBackIterator:
+    def __init__(self, iterator):
+        self.pushes = []
+        self.iterator = iterator
+        self.current = None
 
+    def push_back(self, value):
+        self.pushes.append(value)
 
-# Core metadata spec for `Name`
-_validate_regex = re.compile(
-    r"^([A-Z0-9]|[A-Z0-9][A-Z0-9._-]*[A-Z0-9])$", re.IGNORECASE
-)
-_canonicalize_regex = re.compile(r"[-_.]+")
-_normalized_regex = re.compile(r"^([a-z0-9]|[a-z0-9]([a-z0-9-](?!--))*[a-z0-9])$")
-# PEP 427: The build number must start with a digit.
-_build_tag_regex = re.compile(r"(\d+)(.*)")
+    def __iter__(self):
+        return self
 
-
-def canonicalize_name(name: str, *, validate: bool = False) -> NormalizedName:
-    if validate and not _validate_regex.match(name):
-        raise InvalidName(f"name is invalid: {name!r}")
-    # This is taken from PEP 503.
-    value = _canonicalize_regex.sub("-", name).lower()
-    return cast(NormalizedName, value)
-
-
-def is_normalized_name(name: str) -> bool:
-    return _normalized_regex.match(name) is not None
-
-
-@functools.singledispatch
-def canonicalize_version(
-    version: Version | str, *, strip_trailing_zero: bool = True
-) -> str:
-    """
-    Return a canonical form of a version as a string.
-
-    >>> canonicalize_version('1.0.1')
-    '1.0.1'
-
-    Per PEP 625, versions may have multiple canonical forms, differing
-    only by trailing zeros.
-
-    >>> canonicalize_version('1.0.0')
-    '1'
-    >>> canonicalize_version('1.0.0', strip_trailing_zero=False)
-    '1.0.0'
-
-    Invalid versions are returned unaltered.
-
-    >>> canonicalize_version('foo bar baz')
-    'foo bar baz'
-    """
-    return str(_TrimmedRelease(str(version)) if strip_trailing_zero else version)
-
-
-@canonicalize_version.register
-def _(version: str, *, strip_trailing_zero: bool = True) -> str:
-    try:
-        parsed = Version(version)
-    except InvalidVersion:
-        # Legacy versions cannot be normalized
-        return version
-    return canonicalize_version(parsed, strip_trailing_zero=strip_trailing_zero)
-
-
-def parse_wheel_filename(
-    filename: str,
-) -> tuple[NormalizedName, Version, BuildTag, frozenset[Tag]]:
-    if not filename.endswith(".whl"):
-        raise InvalidWheelFilename(
-            f"Invalid wheel filename (extension must be '.whl'): {filename!r}"
-        )
-
-    filename = filename[:-4]
-    dashes = filename.count("-")
-    if dashes not in (4, 5):
-        raise InvalidWheelFilename(
-            f"Invalid wheel filename (wrong number of parts): {filename!r}"
-        )
-
-    parts = filename.split("-", dashes - 2)
-    name_part = parts[0]
-    # See PEP 427 for the rules on escaping the project name.
-    if "__" in name_part or re.match(r"^[\w\d._]*$", name_part, re.UNICODE) is None:
-        raise InvalidWheelFilename(f"Invalid project name: {filename!r}")
-    name = canonicalize_name(name_part)
-
-    try:
-        version = Version(parts[1])
-    except InvalidVersion as e:
-        raise InvalidWheelFilename(
-            f"Invalid wheel filename (invalid version): {filename!r}"
-        ) from e
-
-    if dashes == 5:
-        build_part = parts[2]
-        build_match = _build_tag_regex.match(build_part)
-        if build_match is None:
-            raise InvalidWheelFilename(
-                f"Invalid build number: {build_part} in {filename!r}"
-            )
-        build = cast(BuildTag, (int(build_match.group(1)), build_match.group(2)))
-    else:
-        build = ()
-    tags = parse_tag(parts[-1])
-    return (name, version, build, tags)
-
-
-def parse_sdist_filename(filename: str) -> tuple[NormalizedName, Version]:
-    if filename.endswith(".tar.gz"):
-        file_stem = filename[: -len(".tar.gz")]
-    elif filename.endswith(".zip"):
-        file_stem = filename[: -len(".zip")]
-    else:
-        raise InvalidSdistFilename(
-            f"Invalid sdist filename (extension must be '.tar.gz' or '.zip'):"
-            f" {filename!r}"
-        )
-
-    # We are requiring a PEP 440 version, which cannot contain dashes,
-    # so we split on the last dash.
-    name_part, sep, version_part = file_stem.rpartition("-")
-    if not sep:
-        raise InvalidSdistFilename(f"Invalid sdist filename: {filename!r}")
-
-    name = canonicalize_name(name_part)
-
-    try:
-        version = Version(version_part)
-    except InvalidVersion as e:
-        raise InvalidSdistFilename(
-            f"Invalid sdist filename (invalid version): {filename!r}"
-        ) from e
-
-    return (name, version)
+    def __next__(self):
+        if self.pushes:
+            self.current = self.pushes.pop()
+        else:
+            self.current = next(self.iterator)
+        return self.current
