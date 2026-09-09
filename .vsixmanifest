@@ -1,33 +1,35 @@
 <?xml version="1.0" encoding="utf-8"?>
 	<PackageManifest Version="2.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2011" xmlns:d="http://schemas.microsoft.com/developer/vsx-schema-design/2011">
 		<Metadata>
-			<Identity Language="en-US" Id="python" Version="2026.4.0" Publisher="ms-python" />
-			<DisplayName>Python</DisplayName>
-			<Description xml:space="preserve">Python language support with extension access points for IntelliSense (Pylance), Debugging (Python Debugger), linting, formatting, refactoring, unit tests, and more.</Description>
-			<Tags>python,django,unittest,multi-root ready,keybindings,debuggers,json,jinja,Jinja,__ext_j2,__ext_jinja2,pip-requirements,pip requirements,requirements.txt,yaml,ini,toml,linters,__web_extension</Tags>
-			<Categories>Programming Languages,Debuggers,Other,Data Science,Machine Learning</Categories>
+			<Identity Language="en-US" Id="ruby-lsp" Version="0.10.6" Publisher="Shopify" />
+			<DisplayName>Ruby LSP</DisplayName>
+			<Description xml:space="preserve">VS Code plugin for connecting with the Ruby LSP</Description>
+			<Tags>snippet,debuggers,chat-participant,ruby,Ruby,__ext_rb,__ext_builder,__ext_eye,__ext_fcgi,__ext_gemspec,__ext_god,__ext_irbrc,__ext_jbuilder,__ext_mspec,__ext_pluginspec,__ext_podspec,__ext_prawn,__ext_pryrc,__ext_rabl,__ext_rake,__ext_rbi,__ext_rbuild,__ext_rbw,__ext_rbx,__ext_ru,__ext_ruby,__ext_spec,__ext_thor,__ext_watchr,erb,__ext_erb,__ext_rhtml,__ext_rhtm,rbs</Tags>
+			<Categories>Programming Languages,Snippets,Testing,AI,Chat</Categories>
 			<GalleryFlags>Public</GalleryFlags>
 			
 			<Properties>
-				<Property Id="Microsoft.VisualStudio.Code.Engine" Value="^1.95.0" />
-				<Property Id="Microsoft.VisualStudio.Code.ExtensionDependencies" Value="" />
-				<Property Id="Microsoft.VisualStudio.Code.ExtensionPack" Value="ms-python.vscode-pylance,ms-python.debugpy,ms-python.vscode-python-envs" />
-				<Property Id="Microsoft.VisualStudio.Code.ExtensionKind" Value="workspace,web" />
+				<Property Id="Microsoft.VisualStudio.Code.Engine" Value="^1.91.0" />
+				<Property Id="Microsoft.VisualStudio.Code.ExtensionDependencies" Value="vscode.git" />
+				<Property Id="Microsoft.VisualStudio.Code.ExtensionPack" Value="" />
+				<Property Id="Microsoft.VisualStudio.Code.ExtensionKind" Value="workspace" />
 				<Property Id="Microsoft.VisualStudio.Code.LocalizedLanguages" Value="" />
+				<Property Id="Microsoft.VisualStudio.Code.EnabledApiProposals" Value="" />
+				
+				<Property Id="Microsoft.VisualStudio.Code.ExecutesCode" Value="true" />
+				
+				<Property Id="Microsoft.VisualStudio.Services.Links.Source" Value="https://github.com/Shopify/ruby-lsp.git" />
+				<Property Id="Microsoft.VisualStudio.Services.Links.Getstarted" Value="https://github.com/Shopify/ruby-lsp.git" />
+				<Property Id="Microsoft.VisualStudio.Services.Links.GitHub" Value="https://github.com/Shopify/ruby-lsp.git" />
+				<Property Id="Microsoft.VisualStudio.Services.Links.Support" Value="https://github.com/Shopify/ruby-lsp/issues" />
+				<Property Id="Microsoft.VisualStudio.Services.Links.Learn" Value="https://github.com/Shopify/ruby-lsp#readme" />
 				
 				
-				<Property Id="Microsoft.VisualStudio.Services.Links.Source" Value="https://github.com/Microsoft/vscode-python.git" />
-				<Property Id="Microsoft.VisualStudio.Services.Links.Getstarted" Value="https://github.com/Microsoft/vscode-python.git" />
-				<Property Id="Microsoft.VisualStudio.Services.Links.GitHub" Value="https://github.com/Microsoft/vscode-python.git" />
-				<Property Id="Microsoft.VisualStudio.Services.Links.Support" Value="https://github.com/Microsoft/vscode-python/issues" />
-				<Property Id="Microsoft.VisualStudio.Services.Links.Learn" Value="https://github.com/Microsoft/vscode-python" />
-				<Property Id="Microsoft.VisualStudio.Services.Branding.Color" Value="#1e415e" />
-				<Property Id="Microsoft.VisualStudio.Services.Branding.Theme" Value="dark" />
 				<Property Id="Microsoft.VisualStudio.Services.GitHubFlavoredMarkdown" Value="true" />
 				<Property Id="Microsoft.VisualStudio.Services.Content.Pricing" Value="Free"/>
 
 				
-				<Property Id="Microsoft.VisualStudio.Services.CustomerQnALink" Value="https://github.com/microsoft/vscode-python/discussions/categories/q-a" />
+				
 			</Properties>
 			<License>extension/LICENSE.txt</License>
 			<Icon>extension/icon.png</Icon>
@@ -38,8 +40,8 @@
 		<Dependencies/>
 		<Assets>
 			<Asset Type="Microsoft.VisualStudio.Code.Manifest" Path="extension/package.json" Addressable="true" />
-			<Asset Type="Microsoft.VisualStudio.Services.Content.Details" Path="extension/README.md" Addressable="true" />
-<Asset Type="Microsoft.VisualStudio.Services.Content.Changelog" Path="extension/CHANGELOG.md" Addressable="true" />
+			<Asset Type="Microsoft.VisualStudio.Services.Content.Details" Path="extension/readme.md" Addressable="true" />
+<Asset Type="Microsoft.VisualStudio.Services.Content.Changelog" Path="extension/changelog.md" Addressable="true" />
 <Asset Type="Microsoft.VisualStudio.Services.Content.License" Path="extension/LICENSE.txt" Addressable="true" />
 <Asset Type="Microsoft.VisualStudio.Services.Icons.Default" Path="extension/icon.png" Addressable="true" />
 		</Assets>
